@@ -1,66 +1,104 @@
+import { promises as fs } from "fs"
+
 class ProductManager {
     constructor() {
+        this.patch = "./productos.json"
         this.products = [];
     }
 
     static id = 0;
 
+    agregarProducto = async (titulo, descripcion, precio, imagen, codigo, existencias) => {
 
-    agregarProducto(titulo, descripcion, precio, imagen, codigo, existencias) {
-        for (let i = 0; i < this.products.length; i++) {
-            if (this.products[i].codigo === codigo) {
-                console.log(`El codigo ${codigo} ya se encuentra agregado \n`);
-                break;
-            }
-        }
+        ProductManager.id++
 
-
-        const nuevoProducto = {
+        let nuevoProducto = {
             titulo,
             descripcion,
             precio,
             imagen,
             codigo,
-            existencias
+            existencias,
+            id: ProductManager.id
         };
+        
+        this.products.push(nuevoProducto)
 
-        if (!Object.values(nuevoProducto).includes(undefined)) {
-            ProductManager.id++
-            this.products.push({ ...nuevoProducto, id: ProductManager.id });
-        } else {
-            console.log("Todos los Campos son requeridos, debe haber algun campo sin diligenciar");
-        }
+        await fs.writeFile(this.patch, JSON.stringify(this.products));
     }
 
-    obtenerProductos() {
-        return this.products;
-    }
-
-    busquedaProducto(id) {
-        return this.products.find((productos) => productos.id === id)
+    leerProductos = async () => {
+        let resultado = await fs.readFile(this.patch, "utf-8")
+        return JSON.parse(resultado)
     }
 
 
-    ObtenerProductosPorId(id) { !this.busquedaProducto(id) ? console.log("No Existe el producto") : console.log(this.busquedaProducto(id)) }
+    obtenerProductos = async () => {
+        let resultado2 = await this.leerProductos();
+        return console.log(resultado2)
+    }
 
+
+    obtenerProductosPorId = async (id) => {
+        let todosProductos = await this.leerProductos();
+        const idProducto = todosProductos.find((productos) => productos.id === id);
+        !idProducto ? console.log("No Existe el producto") : console.log(idProducto);
+    }
+
+    eliminarProductosPorId = async (id) => {
+        let todosProductos = await this.leerProductos();
+        let productoBuscado = todosProductos.filter((productos) => productos.id != id)
+        await fs.writeFile(this.patch, JSON.stringify(productoBuscado), "utf8");
+        console.log("Producto Eliminado");
+        console.log(productoBuscado);
+    }
+
+    actualizarProducto = async ({ id, ...producto }) => {
+        await this.eliminarProductosPorId(id);
+        let produtOld = await this.leerProductos()
+        let productoModificado = [{ ...producto, id }, ...produtOld];
+        await fs.writeFile(this.patch, JSON.stringify(productoModificado), "utf8");
+    }
 }
+
+
 
 const productos = new ProductManager
 
-// Primer test de productos mostrando el array vacio por que esta recien creado 
-console.log(productos.obtenerProductos(), "El Array se encuentra Vacio \n");
+
+// ---------------------------------Test de Pruebas--------------------------------------------------- 
 
 // Agregamos un producto para ver que si nos queda agregado en el array 
+
 productos.agregarProducto("Elementos", "Pelicula Infantil muy animada", 10000, "imagen1", "1234ABC", 10);
 productos.agregarProducto("sirenita", "Pelicula Infantil", 2000, "imagen2", "ABC123", 5);
+productos.agregarProducto("Mohana", "Pelicula Infantil animada ", 5000, "imagen3", "ABC124", 7);
 
 // Realizamos de nuevo la consulta de los productos que hay en el Array, nos debe mostrar los que agregamos
-console.log(productos.obtenerProductos(), "\n");
 
-// Agregamos un producto con un codigo repetido pero datos diferentes para validar que no se repita el Codigo
-productos.agregarProducto("Mohana", "Pelicula Infantil animada ", 5000, "imagen3", "ABC123", 7);
+// productos.obtenerProductos();
 
-// Buscamos el producto por id para saber si existe o no 
-productos.ObtenerProductosPorId(2);
+// Buscamos el producto por id para saber si existe o no
+
+// productos.obtenerProductosPorId(1);
+
+// Realizamos la actualizacion de un producto
+
+/*productos.actualizarProducto({
+    titulo: 'Mohana',
+    descripcion: 'Pelicula Infantil animada ',
+    precio: 5000,
+    imagen: 'imagen3',
+    codigo: 'ABC124',
+    existencias: 20,
+    id: 3
+});*/
+
+// Realizamos la Eliminacion de un producto y consultamos de nuevo para ver los productos
+
+// productos.eliminarProductosPorId(2);
+
+
+
 
 
